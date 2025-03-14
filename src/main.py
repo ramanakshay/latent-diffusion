@@ -1,7 +1,7 @@
-from algorithm.train import Trainer
-from model.classifier import Classifier
-from data.data import FashionMNISTData
-
+from data.data import Data
+from model.model import DiffusionModel
+import matplotlib.pyplot as plt
+import torch
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
@@ -20,18 +20,27 @@ def main(config : DictConfig) -> None:
     setup()
     
     ## DATA ##
-    data = FashionMNISTData(config)
+    data = Data(config)
+    dataset = data.dataset
     print('Data Loaded.')
 
     ## MODEL ##
-    model = Classifier(config)
+    model = DiffusionModel(config)
     print('Model Created.')
 
-    ## ALGORITHM ##
-    print('Running Algorithm.')
-    alg = Trainer(data, model, config)
-    alg.run()
-    print('Done!')
+    sample_image = dataset[0]["images"].unsqueeze(0)
+    print("Input shape:", sample_image.shape)
+
+    noise = torch.randn(sample_image.shape)
+    timesteps = torch.LongTensor([50])
+    noisy_image = model.noise_scheduler.add_noise(sample_image, noise, timesteps)
+    print("Output shape:", noisy_image.shape)
+
+    # ## ALGORITHM ##
+    # print('Running Algorithm.')
+    # alg = Trainer(data, model, config)
+    # alg.run()
+    # print('Done!')
 
     ## CLEANUP ##
     cleanup()

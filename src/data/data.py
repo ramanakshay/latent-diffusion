@@ -1,27 +1,28 @@
-from torchvision import datasets
-from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
+from torchvision import transforms
+from datasets import load_dataset
 
-class FashionMNISTData:
+
+class Data:
     def __init__(self, config):
         self.config = config.data
-        train_dataset = datasets.FashionMNIST(
-            root=config.path,
-            train=True,
-            download=True,
-            transform=ToTensor())
+        dataset_name = self.config.dataset_name
+        self.dataset = load_dataset(dataset_name, split="train")
 
-        test_dataset = datasets.FashionMNIST(
-            root=config.path,
-            train=False,
-            download=True,
-            transform=ToTensor())
+        preprocess = transforms.Compose(
+            [
+                transforms.Resize((self.config.image_size, self.config.image_size)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5], [0.5]),
+            ]
+        )
 
-        batch_size = self.config.batch_size
+        def transform(examples):
+            images = [preprocess(image.convert("RGB")) for image in examples["image"]]
+            return {"images": images}
 
-        self.train_dataloader = DataLoader(train_dataset, batch_size)
-        self.test_dataloader = DataLoader(test_dataset, batch_size)
+        self.dataset.set_transform(transform)
 
-    def get_dataloaders(self):
-        return {'train': self.train_dataloader, 'test': self.test_dataloader}
+        self.dataloader = DataLoader(self.dataset, self.config.batch_size, shuffle=True)
 
