@@ -6,3 +6,4 @@ datasets
 torchvision
 matplotlib
 diffusers
+accelerate

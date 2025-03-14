@@ -1,8 +1,9 @@
 from diffusers import UNet2DModel
 from diffusers import DDPMScheduler
+import torch
 
 class DiffusionModel:
-    def __init__(self, config):
+    def __init__(self, config, accelerator):
         self.config = config.model
         self.noise_scheduler = DDPMScheduler(num_train_timesteps=1000)
         self.unet = UNet2DModel(
@@ -28,3 +29,19 @@ class DiffusionModel:
                 "UpBlock2D",
             ),
         )
+
+        if self.config.to_compile:
+            self.unet = torch.compile(self.unet)
+            if accelerator.is_main_process:
+                print('Model Compiled.')
+
+        self.unet = accelerator.prepare(self.unet)
+
+    def add_noise(self, clean_images, noise, timesteps):
+        # Add noise to the clean images according to the noise magnitude at each timestep
+        # (this is the forward diffusion process)
+        noisy_images = self.noise_scheduler.add_noise(clean_images, noise, timesteps)
+        return noisy_images
+
+    def predict_noise(self, noisy_images, timesteps, return_dict=False):
+        return self.unet(noisy_images, timesteps, class_labels=None, return_dict=return_dict)[0]

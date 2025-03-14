@@ -4,10 +4,9 @@ from datasets import load_dataset
 
 
 class Data:
-    def __init__(self, config):
+    def __init__(self, config, accelerator):
         self.config = config.data
-        dataset_name = self.config.dataset_name
-        self.dataset = load_dataset(dataset_name, split="train")
+        self.dataset = load_dataset("huggan/smithsonian_butterflies_subset", split="train")
 
         preprocess = transforms.Compose(
             [
@@ -25,4 +24,6 @@ class Data:
         self.dataset.set_transform(transform)
 
         self.dataloader = DataLoader(self.dataset, self.config.batch_size, shuffle=True)
+
+        self.dataloader = accelerator.prepare(self.dataloader)
 
